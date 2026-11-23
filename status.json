@@ -1,21 +1,21 @@
 {
  "ok": true,
- "attempted": "2026-11-23T21:33:55+01:00",
- "published": "2026-11-23T21:33:55+01:00",
+ "attempted": "2026-11-23T21:35:33+01:00",
+ "published": "2026-11-23T21:35:33+01:00",
  "asof": "2026-11-20",
  "event": "push",
  "warnings": [],
  "anoms_missing": 0,
  "consecutive_failures": 0,
  "fetch": {
-  "engine": null,
-  "seconds": null,
-  "requests": null,
-  "retries": null,
+  "engine": "curl_cffi",
+  "seconds": 56.0,
+  "requests": 169,
+  "retries": 0,
   "errors": 0,
-  "reused": "2026-11-23T20:32:48+00:00",
+  "reused": null,
   "errors_sample": []
  },
  "base": "cache",
- "seconds": 3.0
+ "seconds": 59.5
 }
