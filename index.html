@@ -202,6 +202,12 @@ svg text{fill:var(--muted);font-family:var(--font-mono);font-size:10.5px}
 .thesis{display:grid;gap:10px}
 .thesis .fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 @media (max-width:760px){.thesis .fields{grid-template-columns:minmax(0,1fr)}}
+.fresh{display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:11px 13px;margin:12px 0 6px;font-size:13px;line-height:1.45;border:1px solid transparent}
+.fresh b{font-weight:600}.fresh .ic{font-weight:700;flex:none}
+.fresh.bad{background:var(--down-soft);color:var(--down);border-color:color-mix(in srgb,var(--down) 35%,transparent)}
+.fresh.warn{background:var(--warn-soft);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+.fresh.info{background:var(--surface-2);color:var(--ink-2)}
+.fresh .x{margin-left:auto;background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:0 2px;opacity:.7}
 .note{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px}
 .note b{color:var(--ink)}
 .empty{color:var(--muted);font-size:13px;padding:10px 0}
@@ -291,7 +297,7 @@ select{max-width:100%}
   <div class="wrap"><nav class="tabs" role="tablist" id="tabs"></nav></div>
 </header>
 
-<main class="wrap"><div id="app" class="load">Carico i dati di mercato…</div></main>
+<main class="wrap"><div id="fresh" aria-live="polite"></div><div id="app" class="load">Carico i dati di mercato…</div></main>
 
 <button class="btn pri askbtn" id="askOpen" hidden>Chiedi all'analista</button>
 <section class="drawer" id="drawer" hidden aria-label="Chiedi all'analista">
@@ -423,6 +429,7 @@ async function boot(){
   if(!state.builder || !state.builder.syms?.every(x=>D.series[x])){ const t0=curTicker; state.builder = {syms:[t0, D.holdings[t0].etf], mode:'b100', range:'1A', log:false}; }
   if(D.db){ theses = D.db.theses || {}; alerts = D.db.alerts || []; }
   renderTop();
+  checkFresh();
   const h = (location.hash||'').slice(1);
   if(TABS.some(t=>t[0]===h)) current = h; else current = lsGet('qp_tab','panoramica');
   renderTabs(); render();
@@ -439,6 +446,38 @@ function renderTop(){
   <span class="pill" title="Indice composito risk-on/risk-off (0–100)"><span class="dot" style="background:${lab.c}"></span>Regime ${nf0.format(g.score)} · ${lab.t} <span class="${cls(g.d1m)} hide-m">${pp(g.d1m,0)} in 1 mese</span></span>`;
 }
 document.addEventListener('click', e => { if(e.target && e.target.id==='reload') location.reload(); });
+/* ---------- freschezza dei dati: avvisa in modo evidente se i dati sono vecchi o l'aggiornamento è fallito ---------- */
+function romeToday(){ return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Rome'}).format(new Date()); }
+function bizDaysAfter(a, b){ // giorni feriali (lun-ven) dopo 'a' fino a 'b' incluso, date AAAA-MM-GG
+  let n=0; const d=new Date(a+'T12:00:00Z'), e=new Date(b+'T12:00:00Z');
+  while(d<e){ d.setUTCDate(d.getUTCDate()+1); const w=d.getUTCDay(); if(w>0&&w<6) n++; } return n; }
+function fmtTs(iso){ try{ const d=new Date(iso), o={timeZone:'Europe/Rome'}; return new Intl.DateTimeFormat('it-IT',{...o,day:'numeric',month:'2-digit'}).format(d)+' alle '+new Intl.DateTimeFormat('it-IT',{...o,hour:'2-digit',minute:'2-digit'}).format(d); }catch{ return iso||''; } }
+function freshBanner(kind, html){
+  const k = 'qp_fresh_x_' + kind + '_' + D.asof;
+  if(kind!=='bad' && lsGet(k,false)) return '';
+  return `<div class="fresh ${kind}" role="${kind==='bad'?'alert':'status'}"><span class="ic">${kind==='info'?'i':'!'}</span><div>${html}</div>${kind!=='bad'?`<button class="x" data-fx="${k}" aria-label="Nascondi">✕</button>`:''}</div>`;
+}
+async function checkFresh(){
+  const el = $('#fresh'); if(!el || !D) return;
+  const lag = bizDaysAfter(D.asof, romeToday());
+  let st = null;
+  if(MODE==='web'){ try{ const r = await fetch('status.json?v='+Date.now(), {cache:'no-store'}); if(r.ok) st = await r.json(); }catch{} }
+  let out = '';
+  if(st && st.ok === false){
+    out += freshBanner('bad', `<b>L'aggiornamento automatico del ${esc(fmtTs(st.attempted))} non è riuscito.</b> ${esc(st.error||'')} Stai vedendo i prezzi alla chiusura del <b>${dIt(D.asof)}</b>. Riprova più tardi con ↻: il sistema ritenta da solo.`);
+  } else if(lag > 2){
+    out += freshBanner('bad', `<b>Dati fermi da ${lag} giorni di borsa</b> (chiusura del ${dIt(D.asof)}). L'aggiornamento automatico non sta arrivando: tocca ↻ per ricaricare; se resta così, l'automazione su GitHub va controllata.`);
+  }
+  if(st && st.ok !== false && st.warnings && st.warnings.length){
+    out += freshBanner('info', `Aggiornato il ${esc(fmtTs(st.published||st.attempted))}. ${st.warnings.length===1?'Una serie secondaria non era disponibile':st.warnings.length+' serie secondarie non erano disponibili'} e mostra il dato precedente: ${esc(st.warnings.slice(0,6).join(', '))}${st.warnings.length>6?'…':''}.`);
+  }
+  el.innerHTML = out;
+  el.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{ lsSet(b.dataset.fx,true); b.closest('.fresh').remove(); });
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && D && MODE==='web'){
+  // riaperta dalla Home dopo ore: se nel frattempo sono arrivati dati nuovi, ricarica
+  fetch('status.json?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(st=>{ if(st && st.asof && st.asof > D.asof) location.reload(); else checkFresh(); }).catch(()=>{});
+}});
 function regimeLabel(s){ return s>=66.6 ? {t:'Risk-on', c:cssv('--up')} : s<=33.3 ? {t:'Risk-off', c:cssv('--down')} : {t:'Neutro', c:cssv('--warn')}; }
 function renderTabs(){
   $('#tabs').innerHTML = TABS.map(([k,l])=>`<button class="tab" role="tab" aria-selected="${k===current}" data-k="${k}">${l}</button>`).join('');
@@ -475,7 +514,7 @@ function vOverview(app){
   const eurNow = D.tax.eurusd;
   const plUsd = P.equity - A.deposits_usd, plEur = P.equity_eur - A.deposits_eur;
   app.innerHTML = `
-  <p class="show-m mut" style="margin:0;font-size:12px">Prezzi alla chiusura USA del <b>${dIt(D.asof)}</b> · aggiornato ogni mattina alle 7:21</p>
+  <p class="show-m mut" style="margin:0;font-size:12px">Prezzi alla chiusura USA del <b>${dIt(D.asof)}</b> · aggiornamento automatico ogni mattina</p>
   <section class="kpis">
     <div class="kpi"><span class="l">Valore del conto</span><span class="v">${usd(P.equity)}</span><span class="s">${eur(P.equity_eur)} · cambio ${num(eurNow,4)}</span></div>
     <div class="kpi"><span class="l">Risultato sui versamenti</span><span class="v ${cls(plUsd)}">${sUsd(plUsd)}</span><span class="s">in euro <b class="${cls(plEur)}">${sEur(plEur)}</b>, di cui ${sEur(P.fx_effect_eur,0)} dal cambio</span></div>
