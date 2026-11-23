@@ -1,20 +1,20 @@
 {
  "ok": true,
- "attempted": "2026-11-23T20:48:55+01:00",
- "published": "2026-11-23T20:48:55+01:00",
+ "attempted": "2026-11-23T20:56:29+01:00",
+ "published": "2026-11-23T20:56:29+01:00",
  "asof": "2026-11-20",
- "event": "workflow_dispatch",
+ "event": "push",
  "warnings": [],
  "anoms_missing": 0,
  "consecutive_failures": 0,
  "fetch": {
   "engine": "curl_cffi",
-  "seconds": 38.1,
+  "seconds": 58.4,
   "requests": 169,
   "retries": 0,
   "errors": 0,
   "reused": null
  },
  "base": "seed",
- "seconds": 41.0
+ "seconds": 61.8
 }
