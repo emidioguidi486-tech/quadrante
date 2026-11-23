@@ -1,11 +1,21 @@
 {
- "ok": false,
- "attempted": "2026-11-23T21:28:18+01:00",
- "error": "Yahoo Finance non ha restituito i prezzi di AMD.",
- "event": "push",
+ "ok": true,
+ "attempted": "2026-11-23T21:30:34+01:00",
+ "published": "2026-11-23T21:30:34+01:00",
  "asof": "2026-11-20",
- "published": "2026-11-23T21:26:12+01:00",
+ "event": "push",
  "warnings": [],
- "consecutive_failures": 1,
- "seconds": 77.9
+ "anoms_missing": 0,
+ "consecutive_failures": 0,
+ "fetch": {
+  "engine": "curl_cffi",
+  "seconds": 65.2,
+  "requests": 169,
+  "retries": 0,
+  "errors": 0,
+  "reused": null,
+  "errors_sample": []
+ },
+ "base": "cache",
+ "seconds": 68.7
 }
