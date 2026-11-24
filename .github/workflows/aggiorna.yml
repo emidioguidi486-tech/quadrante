@@ -2,12 +2,18 @@ name: Aggiorna Quadrante
 
 on:
   schedule:
-    # orari UTC: 04:43 e 05:37 → 05:43 e 06:37 in Italia d'inverno, 06:43 e 07:37 d'estate. Tutti i giorni:
-    # se l'ultima seduta USA è già pubblicata il giro termina subito senza toccare nulla; altrimenti riprova
-    # (rete di sicurezza contro ritardi o salti dei cron di GitHub e guasti temporanei di Yahoo).
+    # Orari UTC (Italia: +1 d'inverno, +2 d'estate). Il cron di GitHub è "best effort": i giri possono slittare
+    # o essere saltati, per questo ci sono più slot sparsi su minuti non tondi. Se l'ultima seduta USA è già
+    # pubblicata il giro termina subito senza toccare nulla, quindi gli slot in più non costano niente.
+    # Ulteriore rete di sicurezza: il digest mattutino di Claude (07:21 Italia) controlla status.json e,
+    # se i dati sono vecchi, avvia questo workflow con workflow_dispatch.
+    - cron: '13 3 * * *'
     - cron: '43 4 * * *'
     - cron: '37 5 * * *'
+    - cron: '9 6 * * *'
+    - cron: '52 7 * * *'
     - cron: '17 11 * * *'
+    - cron: '41 15 * * *'
   push:
     branches: [main]
     paths: ['private.enc', 'seed.enc', 'ci/**', '.github/workflows/aggiorna.yml']
@@ -36,11 +42,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: pip
@@ -50,7 +56,7 @@ jobs:
         run: pip install -r ci/requirements.txt
 
       - name: Ultimo dato buono (cache)
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .qpcache
           key: qp-raw-${{ github.run_id }}-${{ github.run_attempt }}
@@ -66,7 +72,7 @@ jobs:
 
       - name: Salva cache
         if: steps.run.outcome == 'success' && hashFiles('.qpcache/raw.enc') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .qpcache
           key: qp-raw-${{ github.run_id }}-${{ github.run_attempt }}
