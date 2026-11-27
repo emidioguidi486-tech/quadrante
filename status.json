@@ -1,7 +1,7 @@
 {
  "ok": true,
- "attempted": "2026-11-27T18:41:37+01:00",
- "published": "2026-11-27T18:41:37+01:00",
+ "attempted": "2026-11-27T21:03:12+01:00",
+ "published": "2026-11-27T21:03:12+01:00",
  "asof": "2026-11-25",
  "event": "schedule",
  "warnings": [],
@@ -9,7 +9,7 @@
  "consecutive_failures": 0,
  "fetch": {
   "engine": "curl_cffi",
-  "seconds": 58.3,
+  "seconds": 74.5,
   "requests": 169,
   "retries": 0,
   "errors": 0,
@@ -17,5 +17,5 @@
   "errors_sample": []
  },
  "base": "cache",
- "seconds": 61.8
+ "seconds": 79.2
 }
